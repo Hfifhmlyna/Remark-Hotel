@@ -1,9 +1,12 @@
 const fs = require('fs');
 const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
+const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 const logger = require('../utils/logger');
 
+const dbProvider = (process.env.DB_PROVIDER || 'sqlite').toLowerCase();
+const isPostgresProvider = dbProvider === 'postgres';
 const isVercelRuntime = Boolean(process.env.VERCEL);
 const defaultDbPath = isVercelRuntime ? '/tmp/app.db' : './database/app.db';
 const dbPathFromEnv = process.env.DB_PATH || defaultDbPath;
@@ -11,23 +14,86 @@ const resolvedDbPath = path.isAbsolute(dbPathFromEnv)
   ? dbPathFromEnv
   : path.join(__dirname, '..', '..', dbPathFromEnv);
 
-const dbDir = path.dirname(resolvedDbPath);
-if (!fs.existsSync(dbDir)) {
-  fs.mkdirSync(dbDir, { recursive: true });
+let db = null;
+let pgPool = null;
+
+if (isPostgresProvider) {
+  if (!process.env.DATABASE_URL) {
+    throw new Error('DATABASE_URL wajib diisi ketika DB_PROVIDER=postgres');
+  }
+
+  pgPool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl:
+      process.env.PGSSLMODE === 'disable'
+        ? false
+        : {
+            rejectUnauthorized: false
+          }
+  });
+} else {
+  const dbDir = path.dirname(resolvedDbPath);
+  if (!fs.existsSync(dbDir)) {
+    fs.mkdirSync(dbDir, { recursive: true });
+  }
+
+  db = new sqlite3.Database(resolvedDbPath, (err) => {
+    if (err) {
+      logger.error('Gagal membuka database SQLite', { message: err.message });
+    }
+  });
+
+  db.serialize(() => {
+    db.run('PRAGMA journal_mode = WAL');
+    db.run('PRAGMA foreign_keys = ON');
+  });
 }
 
-const db = new sqlite3.Database(resolvedDbPath, (err) => {
-  if (err) {
-    logger.error('Gagal membuka database SQLite', { message: err.message });
-  }
-});
+function splitSqlStatements(sql) {
+  return sql
+    .split(';')
+    .map((statement) => statement.trim())
+    .filter(Boolean);
+}
 
-db.serialize(() => {
-  db.run('PRAGMA journal_mode = WAL');
-  db.run('PRAGMA foreign_keys = ON');
-});
+function convertQuestionMarksToPostgres(sql) {
+  let index = 0;
+  return sql.replace(/\?/g, () => {
+    index += 1;
+    return `$${index}`;
+  });
+}
+
+function normalizeId(value) {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  const parsed = Number.parseInt(value, 10);
+  return Number.isInteger(parsed) ? parsed : value;
+}
+
+function addReturningIdIfInsert(sql) {
+  const trimmed = sql.trim();
+  if (!/^insert\s+/i.test(trimmed) || /\breturning\b/i.test(trimmed)) {
+    return sql;
+  }
+
+  const withoutSemicolon = trimmed.replace(/;\s*$/, '');
+  return `${withoutSemicolon} RETURNING id`;
+}
 
 function run(sql, params = []) {
+  if (isPostgresProvider) {
+    const convertedSql = convertQuestionMarksToPostgres(sql);
+    const preparedSql = addReturningIdIfInsert(convertedSql);
+
+    return pgPool.query(preparedSql, params).then((result) => ({
+      lastID: normalizeId(result.rows?.[0]?.id),
+      changes: Number(result.rowCount || 0)
+    }));
+  }
+
   return new Promise((resolve, reject) => {
     db.run(sql, params, function onRun(err) {
       if (err) {
@@ -40,6 +106,11 @@ function run(sql, params = []) {
 }
 
 function get(sql, params = []) {
+  if (isPostgresProvider) {
+    const convertedSql = convertQuestionMarksToPostgres(sql);
+    return pgPool.query(convertedSql, params).then((result) => result.rows[0]);
+  }
+
   return new Promise((resolve, reject) => {
     db.get(sql, params, (err, row) => {
       if (err) {
@@ -52,6 +123,11 @@ function get(sql, params = []) {
 }
 
 function all(sql, params = []) {
+  if (isPostgresProvider) {
+    const convertedSql = convertQuestionMarksToPostgres(sql);
+    return pgPool.query(convertedSql, params).then((result) => result.rows);
+  }
+
   return new Promise((resolve, reject) => {
     db.all(sql, params, (err, rows) => {
       if (err) {
@@ -64,6 +140,13 @@ function all(sql, params = []) {
 }
 
 function exec(sql) {
+  if (isPostgresProvider) {
+    const statements = splitSqlStatements(sql);
+    return statements.reduce((chain, statement) => {
+      return chain.then(() => pgPool.query(statement));
+    }, Promise.resolve());
+  }
+
   return new Promise((resolve, reject) => {
     db.exec(sql, (err) => {
       if (err) {
@@ -76,6 +159,16 @@ function exec(sql) {
 }
 
 function closeDatabase() {
+  if (isPostgresProvider) {
+    if (!pgPool) {
+      return Promise.resolve();
+    }
+
+    return pgPool.end().then(() => {
+      pgPool = null;
+    });
+  }
+
   return new Promise((resolve, reject) => {
     db.close((err) => {
       if (err) {
@@ -87,7 +180,7 @@ function closeDatabase() {
   });
 }
 
-async function initializeDatabase() {
+async function initializeSqliteDatabase() {
   await exec(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -143,13 +236,85 @@ async function initializeDatabase() {
     );
   `);
 
-  await ensureUserSecurityColumns();
-  await seedDefaultUsers();
-  await seedDefaultRooms();
-  logger.info('Database initialized', { dbPath: resolvedDbPath });
+  await ensureUserSecurityColumnsSqlite();
 }
 
-async function ensureUserSecurityColumns() {
+async function initializePostgresDatabase() {
+  await exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      id BIGSERIAL PRIMARY KEY,
+      full_name TEXT NOT NULL,
+      email TEXT NOT NULL UNIQUE,
+      username TEXT NOT NULL UNIQUE,
+      password_hash TEXT NOT NULL,
+      role TEXT NOT NULL CHECK (role IN ('admin', 'user')) DEFAULT 'user',
+      failed_login_attempts INTEGER NOT NULL DEFAULT 0,
+      locked_until TIMESTAMPTZ,
+      last_failed_login_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS rooms (
+      id BIGSERIAL PRIMARY KEY,
+      name TEXT NOT NULL,
+      location TEXT NOT NULL,
+      capacity INTEGER NOT NULL CHECK (capacity > 0),
+      description TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS reservations (
+      id BIGSERIAL PRIMARY KEY,
+      user_id BIGINT NOT NULL,
+      room_id BIGINT NOT NULL,
+      title TEXT NOT NULL,
+      agenda TEXT NOT NULL,
+      start_time TIMESTAMPTZ NOT NULL,
+      end_time TIMESTAMPTZ NOT NULL,
+      status TEXT NOT NULL CHECK (status IN ('pending', 'approved', 'rejected')) DEFAULT 'pending',
+      admin_note TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS audit_logs (
+      id BIGSERIAL PRIMARY KEY,
+      actor_user_id BIGINT,
+      action TEXT NOT NULL,
+      entity_type TEXT NOT NULL,
+      entity_id TEXT,
+      metadata_json TEXT,
+      ip_address TEXT,
+      user_agent TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (actor_user_id) REFERENCES users(id) ON DELETE SET NULL
+    );
+  `);
+
+  await ensureUserSecurityColumnsPostgres();
+}
+
+async function initializeDatabase() {
+  if (isPostgresProvider) {
+    await initializePostgresDatabase();
+  } else {
+    await initializeSqliteDatabase();
+  }
+
+  await seedDefaultUsers();
+  await seedDefaultRooms();
+
+  logger.info('Database initialized', {
+    provider: isPostgresProvider ? 'postgres' : 'sqlite',
+    dbPath: isPostgresProvider ? undefined : resolvedDbPath
+  });
+}
+
+async function ensureUserSecurityColumnsSqlite() {
   const userColumns = await all('PRAGMA table_info(users)');
   const availableColumns = new Set(userColumns.map((column) => column.name));
 
@@ -163,6 +328,29 @@ async function ensureUserSecurityColumns() {
 
   if (!availableColumns.has('last_failed_login_at')) {
     await run('ALTER TABLE users ADD COLUMN last_failed_login_at TEXT');
+  }
+}
+
+async function ensureUserSecurityColumnsPostgres() {
+  const userColumns = await all(
+    `
+    SELECT column_name
+    FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'users'
+  `
+  );
+  const availableColumns = new Set(userColumns.map((column) => column.column_name));
+
+  if (!availableColumns.has('failed_login_attempts')) {
+    await run('ALTER TABLE users ADD COLUMN failed_login_attempts INTEGER NOT NULL DEFAULT 0');
+  }
+
+  if (!availableColumns.has('locked_until')) {
+    await run('ALTER TABLE users ADD COLUMN locked_until TIMESTAMPTZ');
+  }
+
+  if (!availableColumns.has('last_failed_login_at')) {
+    await run('ALTER TABLE users ADD COLUMN last_failed_login_at TIMESTAMPTZ');
   }
 }
 
@@ -274,7 +462,7 @@ async function createUserIfNotExists({ fullName, email, username, password, role
 }
 
 module.exports = {
-  db,
+  db: isPostgresProvider ? pgPool : db,
   run,
   get,
   all,

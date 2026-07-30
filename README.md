@@ -1,4 +1,4 @@
-# Sistem Reservasi Ruangan (Express + SQLite)
+# Sistem Reservasi Ruangan (Express + SQLite/PostgreSQL)
 
 Starter source code untuk tugas DevSecOps / SSDLC.
 
@@ -15,7 +15,7 @@ Starter source code untuk tugas DevSecOps / SSDLC.
 
 ## Penerapan Secure Coding
 - Hashing password dengan `bcryptjs`.
-- Parameterized query di semua akses database SQLite.
+- Parameterized query di semua akses database.
 - Validasi dan sanitasi input dengan `express-validator`.
 - RBAC middleware untuk proteksi akses endpoint.
 - Proteksi CSRF pada semua form POST.
@@ -29,6 +29,8 @@ Starter source code untuk tugas DevSecOps / SSDLC.
 ## Struktur Folder
 ```text
 .
+├── api
+│   └── index.js
 ├── database
 │   └── setup.js
 ├── logs
@@ -48,7 +50,8 @@ Starter source code untuk tugas DevSecOps / SSDLC.
 │   └── server.js
 ├── .env.example
 ├── .gitignore
-└── package.json
+├── package.json
+└── vercel.json
 ```
 
 ## Cara Menjalankan
@@ -83,7 +86,9 @@ Nilai default ada di `.env.example` dan bisa diubah lewat file `.env`:
 
 ## Catatan
 - File log keamanan disimpan pada `logs/security.log`.
-- Database SQLite disimpan pada `database/app.db`.
+- Mode default database adalah SQLite (`DB_PROVIDER=sqlite`).
+- Database SQLite lokal disimpan pada `database/app.db`.
+- Untuk production yang persisten di Vercel, gunakan PostgreSQL (`DB_PROVIDER=postgres`).
 
 ## Deploy ke Vercel via GitHub
 
@@ -116,11 +121,17 @@ git push
 6. Output Directory: kosongkan.
 
 ### 3) Set Environment Variables di Vercel
-Minimal isi:
+Rekomendasi production (persisten):
 
 - `NODE_ENV=production`
 - `SESSION_SECRET=<secret-panjang-random>`
 - `HOTEL_NAME=Remark Hotel`
+- `DB_PROVIDER=postgres`
+- `DATABASE_URL=postgres://user:password@host:5432/dbname?sslmode=require`
+
+Opsi demo cepat (tidak persisten):
+
+- `DB_PROVIDER=sqlite`
 - `DB_PATH=/tmp/app.db`
 
 Opsional (kalau ingin ganti akun seed):
@@ -133,7 +144,7 @@ Opsional (kalau ingin ganti akun seed):
 ### 4) Deploy
 Klik **Deploy**. Setelah berhasil, Vercel memberikan URL publik.
 
-### Penting untuk SQLite di Vercel
+### Penting
 - Vercel serverless memakai filesystem sementara (ephemeral).
-- Data SQLite pada `/tmp/app.db` tidak permanen.
-- Untuk production yang stabil, gunakan database eksternal (contoh: Turso, Supabase Postgres, Neon, PlanetScale).
+- Jika memakai SQLite di `/tmp/app.db`, data tidak permanen.
+- Production sebaiknya menggunakan PostgreSQL eksternal (contoh: Supabase atau Neon).
