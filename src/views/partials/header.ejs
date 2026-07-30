@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %> - <%= appName %></title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container nav-wrap">
+        <a class="brand" href="/">
+          <span class="brand-mark"><%= appName %></span>
+          <span class="brand-sub">Hotel Reservation</span>
+        </a>
+        <nav class="menu">
+          <% if (!currentUser) { %>
+            <a href="/login">Login</a>
+            <a href="/register">Register</a>
+          <% } else { %>
+            <a href="/profile">Profil</a>
+            <% if (currentUser.role === 'admin') { %>
+              <a href="/admin/users">Pengguna</a>
+              <a href="/admin/rooms">Kamar</a>
+              <a href="/admin/reservations">Reservasi</a>
+              <a href="/admin/audit-logs">Audit Logs</a>
+            <% } %>
+            <% if (currentUser.role === 'user') { %>
+              <a href="/reservations/new">Ajukan Reservasi</a>
+              <a href="/reservations/my">Reservasi Saya</a>
+            <% } %>
+            <form method="post" action="/logout" class="inline-form">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+              <button type="submit" class="btn-outline">Logout</button>
+            </form>
+          <% } %>
+        </nav>
+      </div>
+    </header>
+
+    <main class="container main-content">
+      <% if (flash) { %>
+        <div class="alert <%= flash.type === 'error' ? 'alert-error' : 'alert-success' %>">
+          <%= flash.message %>
+        </div>
+      <% } %>

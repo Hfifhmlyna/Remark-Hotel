@@ -1,0 +1,32 @@
+<%- include('../partials/header', { title }) %>
+
+<section class="card narrow">
+  <h1><%= formTitle %></h1>
+
+  <form method="post" action="<%= action %>" class="form-grid">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+
+    <label for="name">Nama Kamar</label>
+    <input id="name" name="name" type="text" value="<%= room ? room.name : '' %>" required />
+
+    <label for="location">Lokasi</label>
+    <input id="location" name="location" type="text" value="<%= room ? room.location : '' %>" required />
+
+    <label for="capacity">Kapasitas</label>
+    <input
+      id="capacity"
+      name="capacity"
+      type="number"
+      min="1"
+      value="<%= room ? room.capacity : '' %>"
+      required
+    />
+
+    <label for="description">Deskripsi (opsional)</label>
+    <textarea id="description" name="description" rows="3"><%= room ? (room.description || '') : '' %></textarea>
+
+    <button type="submit" class="btn">Simpan</button>
+  </form>
+</section>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,60 @@
+<%- include('../partials/header', { title }) %>
+
+<section class="hero-hotel">
+  <div class="hero-copy">
+    <p class="eyebrow">Guest Activity</p>
+    <h1 class="hero-title">Reservasi Saya</h1>
+    <p class="hero-sub">
+      Pantau status setiap pengajuan kamar Anda dan lihat catatan dari admin hotel dalam satu tempat.
+    </p>
+    <div class="actions hero-actions">
+      <a class="btn" href="/reservations/new">Buat Reservasi Baru</a>
+    </div>
+  </div>
+
+  <aside class="hero-panel">
+    <h3>Status Reservasi</h3>
+    <ul class="hero-list">
+      <li><strong>pending</strong>: menunggu verifikasi admin.</li>
+      <li><strong>approved</strong>: reservasi disetujui.</li>
+      <li><strong>rejected</strong>: pengajuan ditolak dengan catatan admin.</li>
+    </ul>
+  </aside>
+</section>
+
+<section class="card">
+  <h2>Daftar Pengajuan</h2>
+
+  <% if (!reservations.length) { %>
+    <p>Belum ada reservasi yang diajukan. Gunakan tombol "Buat Reservasi Baru" untuk mulai memesan kamar.</p>
+  <% } else { %>
+    <table>
+      <thead>
+        <tr>
+          <th>Kamar</th>
+          <th>Judul</th>
+          <th>Agenda</th>
+          <th>Mulai</th>
+          <th>Selesai</th>
+          <th>Status</th>
+          <th>Catatan Admin</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% reservations.forEach((item) => { %>
+          <tr>
+            <td><%= item.room_name %> - <%= item.room_location %></td>
+            <td><%= item.title %></td>
+            <td><%= item.agenda %></td>
+            <td><%= item.start_time %></td>
+            <td><%= item.end_time %></td>
+            <td><span class="badge status-<%= item.status %>"><%= item.status %></span></td>
+            <td><%= item.admin_note || '-' %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</section>
+
+<%- include('../partials/footer') %>

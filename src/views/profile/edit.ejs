@@ -1,0 +1,44 @@
+<%- include('../partials/header', { title }) %>
+
+<section class="auth-layout">
+  <article class="card">
+    <p class="eyebrow">Account Settings</p>
+    <h1>Profil Pengguna</h1>
+    <p class="meta">Perbarui informasi akun Anda untuk kenyamanan proses reservasi.</p>
+
+    <form method="post" action="/profile" class="form-grid">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+
+      <label for="fullName">Nama Lengkap</label>
+      <input id="fullName" name="fullName" type="text" value="<%= profile.full_name %>" required />
+
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" value="<%= profile.email %>" required />
+
+      <label for="username">Username</label>
+      <input id="username" name="username" type="text" value="<%= profile.username %>" required />
+
+      <label for="currentPassword">Password Saat Ini (opsional)</label>
+      <input id="currentPassword" name="currentPassword" type="password" />
+
+      <label for="newPassword">Password Baru (opsional)</label>
+      <input id="newPassword" name="newPassword" type="password" minlength="8" />
+
+      <button type="submit" class="btn">Simpan Perubahan</button>
+    </form>
+
+    <p class="meta">Role akun Anda: <strong><%= profile.role %></strong></p>
+  </article>
+
+  <aside class="card showcase-card">
+    <p class="eyebrow">Profile Security</p>
+    <h2>Akun aman, pengalaman menginap lebih tenang.</h2>
+    <ul class="hero-list">
+      <li>Gunakan kombinasi password yang kuat.</li>
+      <li>Perbarui email jika ada perubahan kontak.</li>
+      <li>Jangan bagikan akun reservasi ke pihak lain.</li>
+    </ul>
+  </aside>
+</section>
+
+<%- include('../partials/footer') %>

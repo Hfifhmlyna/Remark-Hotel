@@ -1,0 +1,33 @@
+<%- include('../partials/header', { title }) %>
+
+<section class="auth-layout">
+  <article class="card narrow">
+    <p class="eyebrow">Guest Login</p>
+    <h1>Masuk ke Akun Anda</h1>
+    <p class="meta">Akses reservasi kamar dan pantau status pengajuan secara real-time.</p>
+
+    <form method="post" action="/login" class="form-grid">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+
+      <label for="username">Username</label>
+      <input id="username" name="username" type="text" required />
+
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" required />
+
+      <button type="submit" class="btn">Masuk</button>
+    </form>
+  </article>
+
+  <aside class="card showcase-card">
+    <p class="eyebrow">Remark Experience</p>
+    <h2>Perjalanan menginap dimulai dari reservasi yang mulus.</h2>
+    <ul class="hero-list">
+      <li>Antarmuka bersih, nyaman dibaca, dan mobile-friendly.</li>
+      <li>Kontrol keamanan aktif untuk melindungi data akun.</li>
+      <li>Riwayat reservasi tersimpan rapi untuk setiap pengguna.</li>
+    </ul>
+  </aside>
+</section>
+
+<%- include('../partials/footer') %>

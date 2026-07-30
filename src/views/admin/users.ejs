@@ -1,0 +1,65 @@
+<%- include('../partials/header', { title }) %>
+
+<section class="card admin-banner">
+  <div class="row-between">
+    <h1>Manajemen Pengguna</h1>
+    <p class="meta">Kelola status lock akun pengguna.</p>
+  </div>
+</section>
+
+<section class="card">
+  <h2>Daftar Pengguna</h2>
+
+  <% if (!users.length) { %>
+    <p>Belum ada data pengguna.</p>
+  <% } else { %>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nama / Username</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Gagal Login</th>
+          <th>Status Lock</th>
+          <th>Locked Until</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% users.forEach((user) => { %>
+          <tr>
+            <td><%= user.id %></td>
+            <td>
+              <strong><%= user.full_name %></strong><br />
+              <span class="meta"><%= user.username %></span>
+            </td>
+            <td><%= user.email %></td>
+            <td><%= user.role %></td>
+            <td><%= user.failed_login_attempts %></td>
+            <td>
+              <% if (user.is_locked) { %>
+                <span class="badge status-locked">locked</span>
+              <% } else { %>
+                <span class="badge status-unlocked">active</span>
+              <% } %>
+            </td>
+            <td><%= user.locked_until || '-' %></td>
+            <td>
+              <% if (user.is_locked || user.failed_login_attempts > 0) { %>
+                <form method="post" action="/admin/users/<%= user.id %>/unlock" class="inline-form">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                  <button type="submit" class="btn-secondary">Unlock</button>
+                </form>
+              <% } else { %>
+                <span class="meta">-</span>
+              <% } %>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</section>
+
+<%- include('../partials/footer') %>

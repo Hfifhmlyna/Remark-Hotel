@@ -1,0 +1,76 @@
+<%- include('../partials/header', { title }) %>
+
+<section class="card admin-banner">
+  <div class="row-between">
+    <h1>Manajemen Reservasi</h1>
+    <p class="meta">Tinjau dan proses permintaan reservasi tamu secara cepat.</p>
+  </div>
+</section>
+
+<section class="card">
+  <h2>Daftar Reservasi</h2>
+
+  <% if (!reservations.length) { %>
+    <p>Belum ada data reservasi.</p>
+  <% } else { %>
+    <table>
+      <thead>
+        <tr>
+          <th>Pemohon</th>
+          <th>Kamar</th>
+          <th>Judul</th>
+          <th>Agenda</th>
+          <th>Mulai</th>
+          <th>Selesai</th>
+          <th>Status</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% reservations.forEach((item) => { %>
+          <tr>
+            <td><%= item.user_name %> (<%= item.username %>)</td>
+            <td><%= item.room_name %> - <%= item.room_location %></td>
+            <td><%= item.title %></td>
+            <td><%= item.agenda %></td>
+            <td><%= item.start_time %></td>
+            <td><%= item.end_time %></td>
+            <td><span class="badge status-<%= item.status %>"><%= item.status %></span></td>
+            <td>
+              <% if (item.status === 'pending') { %>
+                <form method="post" action="/admin/reservations/<%= item.id %>/status" class="form-inline-stack">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                  <input type="hidden" name="status" value="approved" />
+                  <input
+                    type="text"
+                    name="adminNote"
+                    placeholder="Catatan admin (opsional)"
+                    maxlength="255"
+                  />
+                  <button type="submit" class="btn">Approve</button>
+                </form>
+
+                <form method="post" action="/admin/reservations/<%= item.id %>/status" class="form-inline-stack">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                  <input type="hidden" name="status" value="rejected" />
+                  <input
+                    type="text"
+                    name="adminNote"
+                    placeholder="Alasan penolakan (opsional)"
+                    maxlength="255"
+                  />
+                  <button type="submit" class="btn-danger">Reject</button>
+                </form>
+              <% } else { %>
+                <p class="meta">Sudah diproses</p>
+                <p class="meta"><%= item.admin_note || '-' %></p>
+              <% } %>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</section>
+
+<%- include('../partials/footer') %>

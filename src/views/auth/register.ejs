@@ -1,0 +1,39 @@
+<%- include('../partials/header', { title }) %>
+
+<section class="auth-layout">
+  <article class="card narrow">
+    <p class="eyebrow">Create Account</p>
+    <h1>Registrasi Pengguna</h1>
+    <p class="meta">Buat akun untuk memesan kamar hotel dengan proses yang aman.</p>
+
+    <form method="post" action="/register" class="form-grid">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+
+      <label for="fullName">Nama Lengkap</label>
+      <input id="fullName" name="fullName" type="text" required />
+
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" required />
+
+      <label for="username">Username</label>
+      <input id="username" name="username" type="text" required />
+
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" required minlength="8" />
+
+      <button type="submit" class="btn">Daftar</button>
+    </form>
+  </article>
+
+  <aside class="card showcase-card">
+    <p class="eyebrow">Guest Friendly</p>
+    <h2>Daftar sekali, reservasi lebih praktis setiap saat.</h2>
+    <ul class="hero-list">
+      <li>Pilih kamar sesuai kebutuhan tamu.</li>
+      <li>Terima notifikasi status approve/reject dari admin.</li>
+      <li>Data profil dapat diperbarui kapan saja.</li>
+    </ul>
+  </aside>
+</section>
+
+<%- include('../partials/footer') %>

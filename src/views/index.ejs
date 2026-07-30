@@ -1,0 +1,147 @@
+<%- include('partials/header', { title }) %>
+<% const safeFeaturedRooms = Array.isArray(featuredRooms) ? featuredRooms : []; %>
+
+<% if (!currentUser) { %>
+  <section class="hero-hotel">
+    <div class="hero-copy">
+      <p class="eyebrow">Welcome to <%= appName %></p>
+      <h1 class="hero-title">Reservasi kamar hotel lebih cepat, aman, dan nyaman.</h1>
+      <p class="hero-sub">
+        Nikmati pengalaman booking modern untuk tamu, sekaligus pengelolaan reservasi yang rapi untuk tim hotel.
+        Semua proses dilengkapi validasi keamanan dan kontrol akses berbasis role.
+      </p>
+      <div class="actions hero-actions">
+        <a class="btn" href="/login">Masuk Sekarang</a>
+        <a class="btn-secondary" href="/register">Daftar Akun Baru</a>
+      </div>
+      <div class="chip-row">
+        <span class="stat-chip">Secure Session</span>
+        <span class="stat-chip">Approval Workflow</span>
+        <span class="stat-chip">Audit Trail</span>
+      </div>
+    </div>
+
+    <aside class="hero-panel">
+      <h3>Highlight Layanan</h3>
+      <ul class="hero-list">
+        <li>Pilih kamar sesuai kapasitas dan lokasi lantai hotel.</li>
+        <li>Proses approval admin untuk menjaga ketersediaan kamar.</li>
+        <li>Status reservasi jelas: pending, approved, atau rejected.</li>
+        <li>Riwayat aktivitas tercatat untuk kebutuhan audit keamanan.</li>
+      </ul>
+    </aside>
+  </section>
+
+  <section class="feature-grid">
+    <article class="feature-card">
+      <h3>Nuansa Hospitality</h3>
+      <p>Antarmuka dirancang nyaman dilihat agar proses reservasi terasa premium seperti website hotel modern.</p>
+    </article>
+    <article class="feature-card">
+      <h3>Reservasi Transparan</h3>
+      <p>Tamu dapat melihat detail pengajuan dan catatan admin secara jelas dalam satu halaman.</p>
+    </article>
+    <article class="feature-card">
+      <h3>Keamanan SSDLC</h3>
+      <p>Penerapan bcrypt, validasi input, RBAC, CSRF, rate limit, dan audit log tersedia secara default.</p>
+    </article>
+  </section>
+
+  <section class="card room-gallery-section">
+    <div class="row-between">
+      <h2>Pilihan Kamar Unggulan</h2>
+      <a class="btn-secondary" href="/reservations/new">Lihat Semua Kamar</a>
+    </div>
+
+    <% if (!safeFeaturedRooms.length) { %>
+      <p class="meta">Kamar sedang diperbarui. Silakan cek kembali beberapa saat lagi.</p>
+    <% } else { %>
+      <div class="room-gallery">
+        <% safeFeaturedRooms.forEach((room, idx) => { %>
+          <article class="room-card room-card-tone-<%= (idx % 4) + 1 %>">
+            <div class="room-thumb">
+              <span class="room-badge">Kamar <%= room.name %></span>
+            </div>
+            <div class="room-copy">
+              <h3><%= room.name %></h3>
+              <p class="meta"><%= room.location %></p>
+              <p><%= room.description || 'Kamar nyaman dengan fasilitas hotel modern.' %></p>
+              <p class="meta">Kapasitas: <strong><%= room.capacity %> tamu</strong></p>
+            </div>
+          </article>
+        <% }) %>
+      </div>
+    <% } %>
+  </section>
+<% } else if (currentUser.role === 'admin') { %>
+  <section class="hero-hotel">
+    <div class="hero-copy">
+      <p class="eyebrow">Admin Dashboard</p>
+      <h1 class="hero-title">Selamat datang, <%= currentUser.fullName %>.</h1>
+      <p class="hero-sub">
+        Kelola kamar, proses reservasi, pantau audit keamanan, dan kontrol akun pengguna dalam satu panel hotel.
+      </p>
+      <div class="actions hero-actions">
+        <a class="btn" href="/admin/rooms">Kelola Kamar</a>
+        <a class="btn-secondary" href="/admin/reservations">Kelola Reservasi</a>
+      </div>
+    </div>
+
+    <aside class="hero-panel">
+      <h3>Admin Quick Access</h3>
+      <ul class="hero-list">
+        <li><a href="/admin/users">Manajemen pengguna & unlock akun</a></li>
+        <li><a href="/admin/audit-logs">Audit log aktivitas sistem</a></li>
+        <li><a href="/admin/rooms/new">Tambah data kamar baru</a></li>
+      </ul>
+    </aside>
+  </section>
+<% } else { %>
+  <section class="hero-hotel">
+    <div class="hero-copy">
+      <p class="eyebrow">Customer Area</p>
+      <h1 class="hero-title">Halo, <%= currentUser.fullName %>. Temukan kamar terbaik Anda.</h1>
+      <p class="hero-sub">
+        Ajukan reservasi kamar dengan jadwal yang Anda inginkan, lalu pantau status persetujuannya secara real-time.
+      </p>
+      <div class="actions hero-actions">
+        <a class="btn" href="/reservations/new">Ajukan Reservasi</a>
+        <a class="btn-secondary" href="/reservations/my">Lihat Reservasi Saya</a>
+      </div>
+    </div>
+
+    <aside class="hero-panel">
+      <h3>Tips Pemesanan</h3>
+      <ul class="hero-list">
+        <li>Pilih kamar sesuai kapasitas tamu.</li>
+        <li>Gunakan judul reservasi yang jelas.</li>
+        <li>Pastikan rentang waktu check-in/check-out valid.</li>
+      </ul>
+    </aside>
+  </section>
+
+  <% if (safeFeaturedRooms.length) { %>
+    <section class="card room-gallery-section">
+      <div class="row-between">
+        <h2>Kamar Populer Hari Ini</h2>
+        <a class="btn-secondary" href="/reservations/new">Ajukan Reservasi</a>
+      </div>
+      <div class="room-gallery">
+        <% safeFeaturedRooms.forEach((room, idx) => { %>
+          <article class="room-card room-card-tone-<%= (idx % 4) + 1 %>">
+            <div class="room-thumb">
+              <span class="room-badge"><%= room.name %></span>
+            </div>
+            <div class="room-copy">
+              <h3><%= room.name %></h3>
+              <p class="meta"><%= room.location %></p>
+              <p class="meta">Kapasitas: <strong><%= room.capacity %> tamu</strong></p>
+            </div>
+          </article>
+        <% }) %>
+      </div>
+    </section>
+  <% } %>
+<% } %>
+
+<%- include('partials/footer') %>

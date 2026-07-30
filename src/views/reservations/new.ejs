@@ -1,0 +1,81 @@
+<%- include('../partials/header', { title }) %>
+
+<section class="auth-layout">
+  <article class="card">
+    <p class="eyebrow">Reservation Form</p>
+    <h1>Ajukan Reservasi Kamar</h1>
+    <p class="meta">Lengkapi detail pemesanan agar tim hotel dapat memprosesnya lebih cepat.</p>
+
+    <form method="get" action="/reservations/new" class="card filter-strip">
+      <h3>Filter Kamar</h3>
+      <div class="filter-grid">
+        <div>
+          <label for="capacity">Minimal Kapasitas</label>
+          <input id="capacity" name="capacity" type="number" min="1" value="<%= filters?.capacity || '' %>" />
+        </div>
+        <div>
+          <label for="floor">Lantai</label>
+          <select id="floor" name="floor">
+            <option value="">Semua Lantai</option>
+            <% (availableFloors || []).forEach((item) => { %>
+              <option value="<%= item %>" <%= Number(filters?.floor) === Number(item) ? 'selected' : '' %>>
+                Lantai <%= item %>
+              </option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="actions">
+          <button type="submit" class="btn-secondary">Terapkan</button>
+          <a class="btn-outline" href="/reservations/new">Reset</a>
+        </div>
+      </div>
+    </form>
+
+    <form method="post" action="/reservations" class="form-grid">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+
+      <% if (!rooms.length) { %>
+        <div class="alert alert-error">
+          Belum ada kamar yang tersedia untuk dipesan. Silakan hubungi admin hotel.
+        </div>
+      <% } else { %>
+        <label for="roomId">Pilih Kamar</label>
+        <select id="roomId" name="roomId" required>
+          <option value="">-- Pilih Kamar --</option>
+          <% rooms.forEach((room) => { %>
+            <option value="<%= room.id %>">
+              <%= room.name %> - <%= room.location %> (Kapasitas: <%= room.capacity %>)
+            </option>
+          <% }) %>
+        </select>
+      <% } %>
+
+      <label for="title">Judul Reservasi</label>
+      <input id="title" name="title" type="text" required />
+
+      <label for="agenda">Agenda</label>
+      <input id="agenda" name="agenda" type="text" required />
+
+      <label for="startTime">Waktu Mulai</label>
+      <input id="startTime" name="startTime" type="datetime-local" required />
+
+      <label for="endTime">Waktu Selesai</label>
+      <input id="endTime" name="endTime" type="datetime-local" required />
+
+      <button type="submit" class="btn" <%= !rooms.length ? 'disabled' : '' %>>Kirim Pengajuan</button>
+    </form>
+  </article>
+
+  <aside class="card showcase-card">
+    <p class="eyebrow">Booking Tips</p>
+    <h2>Pastikan reservasi Anda valid sejak awal.</h2>
+    <ul class="hero-list">
+      <li>Pilih jam check-in/check-out yang realistis.</li>
+      <li>Gunakan judul reservasi yang mudah dikenali.</li>
+      <li>Isi agenda singkat agar admin cepat memvalidasi.</li>
+      <li>Hindari jadwal yang bertabrakan dengan booking lain.</li>
+    </ul>
+  </aside>
+</section>
+
+<%- include('../partials/footer') %>

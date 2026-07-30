@@ -1,0 +1,52 @@
+<%- include('../partials/header', { title }) %>
+
+<section class="card admin-banner">
+  <div class="row-between">
+    <h1>Manajemen Kamar</h1>
+    <p class="meta">Kelola inventori kamar untuk pengalaman tamu terbaik.</p>
+  </div>
+</section>
+
+<section class="card">
+  <div class="row-between">
+    <h2>Daftar Kamar</h2>
+    <a class="btn" href="/admin/rooms/new">Tambah Kamar</a>
+  </div>
+
+  <% if (!rooms.length) { %>
+    <p>Belum ada data kamar.</p>
+  <% } else { %>
+    <table>
+      <thead>
+        <tr>
+          <th>Nama</th>
+          <th>Lokasi</th>
+          <th>Kapasitas</th>
+          <th>Deskripsi</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% rooms.forEach((room) => { %>
+          <tr>
+            <td><%= room.name %></td>
+            <td><%= room.location %></td>
+            <td><%= room.capacity %></td>
+            <td><%= room.description || '-' %></td>
+            <td>
+              <div class="actions compact">
+                <a class="btn-secondary" href="/admin/rooms/<%= room.id %>/edit">Ubah</a>
+                <form method="post" action="/admin/rooms/<%= room.id %>/delete" class="inline-form">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                  <button type="submit" class="btn-danger">Hapus</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</section>
+
+<%- include('../partials/footer') %>
