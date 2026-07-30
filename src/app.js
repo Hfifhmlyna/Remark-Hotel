@@ -11,7 +11,7 @@ const roomRoutes = require('./routes/roomRoutes');
 const reservationRoutes = require('./routes/reservationRoutes');
 const auditRoutes = require('./routes/auditRoutes');
 const adminUserRoutes = require('./routes/adminUserRoutes');
-const { all } = require('./config/db');
+const { all, pingDatabase, getDatabaseProvider } = require('./config/db');
 const logger = require('./utils/logger');
 const { notFoundHandler, errorHandler } = require('./middlewares/errorHandler');
 
@@ -66,6 +66,30 @@ app.use((req, res, next) => {
   res.locals.csrfToken = typeof req.csrfToken === 'function' ? req.csrfToken() : '';
   delete req.session.flash;
   next();
+});
+
+app.get('/health', async (req, res) => {
+  try {
+    await pingDatabase();
+    return res.status(200).json({
+      status: 'ok',
+      app: appName,
+      database: getDatabaseProvider(),
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    logger.error('HEALTHCHECK_FAILED', {
+      message: err.message,
+      provider: getDatabaseProvider()
+    });
+
+    return res.status(503).json({
+      status: 'degraded',
+      app: appName,
+      database: getDatabaseProvider(),
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 app.get('/', async (req, res, next) => {

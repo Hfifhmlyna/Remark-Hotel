@@ -148,3 +148,27 @@ Klik **Deploy**. Setelah berhasil, Vercel memberikan URL publik.
 - Vercel serverless memakai filesystem sementara (ephemeral).
 - Jika memakai SQLite di `/tmp/app.db`, data tidak permanen.
 - Production sebaiknya menggunakan PostgreSQL eksternal (contoh: Supabase atau Neon).
+
+## Checklist Uji Pasca Deploy
+
+Setelah deploy berhasil, lakukan verifikasi ini pada URL Vercel Anda:
+
+1. Cek health endpoint:
+   - `GET /health` harus mengembalikan status `200` dengan JSON `status: ok`.
+2. Buka halaman utama:
+   - `GET /` harus tampil normal (bukan 500).
+3. Login admin:
+   - Pastikan akun admin bisa login dan membuka halaman `admin/rooms`, `admin/reservations`, `admin/users`, `admin/audit-logs`.
+4. Uji user flow:
+   - Login user.
+   - Buka `reservations/new` dan ajukan 1 reservasi.
+   - Cek reservasi muncul di `reservations/my`.
+5. Uji approval flow:
+   - Login admin.
+   - Approve reservasi dari `admin/reservations`.
+   - Pastikan status berubah di akun user.
+6. Uji audit trail:
+   - Cek `admin/audit-logs` dan pastikan event login/reservasi/approval tercatat.
+7. Uji persistensi:
+   - Redeploy project.
+   - Verifikasi data reservasi sebelumnya tetap ada (harus persisten jika menggunakan PostgreSQL).

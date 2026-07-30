@@ -89,6 +89,15 @@ describe('Sistem Reservasi Ruangan - Basic Flow', () => {
     expect(response.headers.location).toBe('/login');
   });
 
+  test('health endpoint mengembalikan status ok', async () => {
+    const response = await request(app).get('/health').expect(200);
+
+    expect(response.body).toBeDefined();
+    expect(response.body.status).toBe('ok');
+    expect(response.body.database).toBe('sqlite');
+    expect(typeof response.body.timestamp).toBe('string');
+  });
+
   test('akun user terkunci sementara setelah gagal login berulang', async () => {
     const userAgent = request.agent(app);
     const adminAgent = request.agent(app);

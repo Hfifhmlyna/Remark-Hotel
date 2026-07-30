@@ -180,6 +180,19 @@ function closeDatabase() {
   });
 }
 
+async function pingDatabase() {
+  if (isPostgresProvider) {
+    await pgPool.query('SELECT 1');
+    return;
+  }
+
+  await get('SELECT 1 AS ok');
+}
+
+function getDatabaseProvider() {
+  return isPostgresProvider ? 'postgres' : 'sqlite';
+}
+
 async function initializeSqliteDatabase() {
   await exec(`
     CREATE TABLE IF NOT EXISTS users (
@@ -467,6 +480,8 @@ module.exports = {
   get,
   all,
   exec,
+  pingDatabase,
+  getDatabaseProvider,
   closeDatabase,
   initializeDatabase
 };
