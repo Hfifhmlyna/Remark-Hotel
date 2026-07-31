@@ -140,6 +140,7 @@ Opsional (kalau ingin ganti akun seed):
 - `SEED_ADMIN_PASSWORD`
 - `SEED_ADMIN_EMAIL`
 - `SEED_ADMIN_NAME`
+- `SEED_ADMIN_FORCE_UPDATE` (gunakan `true` hanya untuk reset admin, lalu kembalikan ke `false`)
 
 ### 4) Deploy
 Klik **Deploy**. Setelah berhasil, Vercel memberikan URL publik.
@@ -148,6 +149,24 @@ Klik **Deploy**. Setelah berhasil, Vercel memberikan URL publik.
 - Vercel serverless memakai filesystem sementara (ephemeral).
 - Jika memakai SQLite di `/tmp/app.db`, data tidak permanen.
 - Production sebaiknya menggunakan PostgreSQL eksternal (contoh: Supabase atau Neon).
+
+## Recovery Admin Login (Kredensial Tidak Valid)
+
+Jika akun admin tidak bisa login di production:
+
+1. Buka **Vercel Project Settings > Environment Variables**.
+2. Set nilai akun admin yang diinginkan:
+   - `SEED_ADMIN_USERNAME`
+   - `SEED_ADMIN_PASSWORD`
+   - `SEED_ADMIN_EMAIL`
+   - `SEED_ADMIN_NAME`
+3. Set `SEED_ADMIN_FORCE_UPDATE=true`.
+4. Redeploy project.
+5. Login menggunakan kredensial admin terbaru.
+6. Setelah berhasil login, set kembali `SEED_ADMIN_FORCE_UPDATE=false` lalu redeploy lagi.
+
+Catatan:
+- Mode recovery ini juga mereset lockout admin (`failed_login_attempts` dan `locked_until`).
 
 ## Checklist Uji Pasca Deploy
 

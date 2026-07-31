@@ -193,6 +193,14 @@ function getDatabaseProvider() {
   return isPostgresProvider ? 'postgres' : 'sqlite';
 }
 
+function isTruthyEnv(value) {
+  if (typeof value !== 'string') {
+    return false;
+  }
+
+  return ['1', 'true', 'yes', 'on'].includes(value.trim().toLowerCase());
+}
+
 async function initializeSqliteDatabase() {
   await exec(`
     CREATE TABLE IF NOT EXISTS users (
@@ -368,12 +376,15 @@ async function ensureUserSecurityColumnsPostgres() {
 }
 
 async function seedDefaultUsers() {
+  const forceUpdateAdminSeed = isTruthyEnv(process.env.SEED_ADMIN_FORCE_UPDATE);
+
   await createUserIfNotExists({
     fullName: process.env.SEED_ADMIN_NAME || 'Administrator',
     email: process.env.SEED_ADMIN_EMAIL || 'admin@example.com',
     username: process.env.SEED_ADMIN_USERNAME || 'admin',
     password: process.env.SEED_ADMIN_PASSWORD || 'Admin123!',
-    role: 'admin'
+    role: 'admin',
+    forceUpdateExisting: forceUpdateAdminSeed
   });
 
   await createUserIfNotExists({
@@ -452,18 +463,52 @@ async function createRoomIfNotExists({ name, location, capacity, description }) 
   });
 }
 
-async function createUserIfNotExists({ fullName, email, username, password, role }) {
+async function createUserIfNotExists({
+  fullName,
+  email,
+  username,
+  password,
+  role,
+  forceUpdateExisting = false
+}) {
   // [SECURE CODING] Parameterized Query untuk mencegah SQL Injection.
-  const existingUser = await get('SELECT id FROM users WHERE username = ? OR email = ?', [
+  const existingUser = await get('SELECT id, username, email, role FROM users WHERE username = ? OR email = ?', [
     username,
     email
   ]);
 
+  const passwordHash = bcrypt.hashSync(password, 12);
+
   if (existingUser) {
+    if (!forceUpdateExisting) {
+      return;
+    }
+
+    // [SECURE CODING] Parameterized Query untuk force reset akun admin dari env bila diminta.
+    await run(
+      `
+      UPDATE users
+      SET full_name = ?,
+          email = ?,
+          username = ?,
+          password_hash = ?,
+          role = ?,
+          failed_login_attempts = 0,
+          locked_until = NULL,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `,
+      [fullName, email, username, passwordHash, role, existingUser.id]
+    );
+
+    logger.security('SEED_USER_FORCE_UPDATED', {
+      userId: existingUser.id,
+      username,
+      role
+    });
+
     return;
   }
-
-  const passwordHash = bcrypt.hashSync(password, 12);
 
   // [SECURE CODING] Parameterized Query untuk insert user secara aman.
   await run(
