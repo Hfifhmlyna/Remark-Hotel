@@ -178,7 +178,7 @@ describe('Sistem Reservasi Ruangan - Basic Flow', () => {
 
     const userLoginResponse = await loginWithForm(userAgent, 'user', 'User12345!');
     expect(userLoginResponse.statusCode).toBe(303);
-    expect(userLoginResponse.headers.location).toBe('/');
+    expect(userLoginResponse.headers.location).toBe('/reservations/my');
 
     const reservationPage = await userAgent.get('/reservations/new').expect(200);
     const userCsrfToken = extractCsrfToken(reservationPage.text);
@@ -208,7 +208,7 @@ describe('Sistem Reservasi Ruangan - Basic Flow', () => {
 
     const adminLoginResponse = await loginWithForm(adminAgent, 'admin', 'Admin123!');
     expect(adminLoginResponse.statusCode).toBe(303);
-    expect(adminLoginResponse.headers.location).toBe('/');
+    expect(adminLoginResponse.headers.location).toBe('/admin/reservations');
 
     const manageReservationPage = await adminAgent.get('/admin/reservations').expect(200);
     const adminCsrfToken = extractCsrfToken(manageReservationPage.text);

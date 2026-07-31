@@ -36,6 +36,14 @@ function redirectSeeOther(res, location) {
   return res.redirect(303, location);
 }
 
+function getPostLoginRedirect(user) {
+  if (user && user.role === 'admin') {
+    return '/admin/reservations';
+  }
+
+  return '/reservations/my';
+}
+
 function showRegister(req, res) {
   if (req.session.user) {
     return res.redirect('/');
@@ -93,7 +101,7 @@ async function register(req, res, next) {
 
 function showLogin(req, res) {
   if (req.session.user) {
-    return res.redirect('/');
+    return res.redirect(getPostLoginRedirect(req.session.user));
   }
 
   return res.render('auth/login', {
@@ -253,7 +261,7 @@ async function login(req, res, next) {
     });
 
     setFlash(req, 'success', `Selamat datang, ${user.full_name}.`);
-    return redirectSeeOther(res, '/');
+    return redirectSeeOther(res, getPostLoginRedirect(req.session.user));
   } catch (err) {
     return next(err);
   }

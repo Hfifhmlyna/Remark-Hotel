@@ -1,6 +1,7 @@
 const path = require('path');
 const express = require('express');
 const session = require('express-session');
+const PgSession = require('connect-pg-simple')(session);
 const csrf = require('csurf');
 const helmet = require('helmet');
 const morgan = require('morgan');
@@ -11,7 +12,7 @@ const roomRoutes = require('./routes/roomRoutes');
 const reservationRoutes = require('./routes/reservationRoutes');
 const auditRoutes = require('./routes/auditRoutes');
 const adminUserRoutes = require('./routes/adminUserRoutes');
-const { all, pingDatabase, getDatabaseProvider } = require('./config/db');
+const { all, pingDatabase, getDatabaseProvider, getPostgresPool } = require('./config/db');
 const logger = require('./utils/logger');
 const { notFoundHandler, errorHandler } = require('./middlewares/errorHandler');
 
@@ -36,21 +37,33 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use(
-  session({
-    // [SECURE CODING] Secret session diambil dari environment variable.
-    secret: process.env.SESSION_SECRET || 'please-change-session-secret',
-    resave: false,
-    saveUninitialized: false,
-    proxy: process.env.NODE_ENV === 'production',
-    cookie: {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 1000 * 60 * 60 * 8
-    }
-  })
-);
+const sessionConfig = {
+  // [SECURE CODING] Secret session diambil dari environment variable.
+  secret: process.env.SESSION_SECRET || 'please-change-session-secret',
+  resave: false,
+  saveUninitialized: false,
+  proxy: process.env.NODE_ENV === 'production',
+  cookie: {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 1000 * 60 * 60 * 8
+  }
+};
+
+if (getDatabaseProvider() === 'postgres') {
+  const pgPool = getPostgresPool();
+  if (pgPool) {
+    // [DEPLOYMENT] Session store persisten agar login stabil di environment serverless.
+    sessionConfig.store = new PgSession({
+      pool: pgPool,
+      tableName: 'user_sessions',
+      pruneSessionInterval: false
+    });
+  }
+}
+
+app.use(session(sessionConfig));
 
 app.use(
   csrf({

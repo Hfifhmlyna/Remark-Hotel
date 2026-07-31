@@ -193,6 +193,10 @@ function getDatabaseProvider() {
   return isPostgresProvider ? 'postgres' : 'sqlite';
 }
 
+function getPostgresPool() {
+  return pgPool;
+}
+
 function isTruthyEnv(value) {
   if (typeof value !== 'string') {
     return false;
@@ -314,6 +318,14 @@ async function initializePostgresDatabase() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (actor_user_id) REFERENCES users(id) ON DELETE SET NULL
     );
+
+    CREATE TABLE IF NOT EXISTS user_sessions (
+      sid VARCHAR PRIMARY KEY,
+      sess JSON NOT NULL,
+      expire TIMESTAMPTZ NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS user_sessions_expire_idx ON user_sessions(expire);
   `);
 
   await ensureUserSecurityColumnsPostgres();
@@ -527,6 +539,7 @@ module.exports = {
   exec,
   pingDatabase,
   getDatabaseProvider,
+  getPostgresPool,
   closeDatabase,
   initializeDatabase
 };
