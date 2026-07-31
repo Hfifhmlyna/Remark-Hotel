@@ -85,7 +85,7 @@ describe('Sistem Reservasi Ruangan - Basic Flow', () => {
         password: 'Password123!'
       });
 
-    expect(response.statusCode).toBe(302);
+    expect(response.statusCode).toBe(303);
     expect(response.headers.location).toBe('/login');
   });
 
@@ -115,7 +115,7 @@ describe('Sistem Reservasi Ruangan - Basic Flow', () => {
           password: 'WrongPassword!'
         });
 
-      expect(failedLoginResponse.statusCode).toBe(302);
+      expect(failedLoginResponse.statusCode).toBe(303);
       expect(failedLoginResponse.headers.location).toBe('/login');
     }
 
@@ -134,7 +134,7 @@ describe('Sistem Reservasi Ruangan - Basic Flow', () => {
         password: 'User12345!'
       });
 
-    expect(blockedLoginResponse.statusCode).toBe(302);
+    expect(blockedLoginResponse.statusCode).toBe(303);
     expect(blockedLoginResponse.headers.location).toBe('/login');
 
     const lockAuditLog = await get(
@@ -144,7 +144,7 @@ describe('Sistem Reservasi Ruangan - Basic Flow', () => {
     expect(lockAuditLog).toBeDefined();
 
     const adminLoginResponse = await loginWithForm(adminAgent, 'admin', 'Admin123!');
-    expect(adminLoginResponse.statusCode).toBe(302);
+    expect(adminLoginResponse.statusCode).toBe(303);
 
     const usersPage = await adminAgent.get('/admin/users').expect(200);
     const adminCsrfToken = extractCsrfToken(usersPage.text);
@@ -177,7 +177,7 @@ describe('Sistem Reservasi Ruangan - Basic Flow', () => {
     const adminAgent = request.agent(app);
 
     const userLoginResponse = await loginWithForm(userAgent, 'user', 'User12345!');
-    expect(userLoginResponse.statusCode).toBe(302);
+    expect(userLoginResponse.statusCode).toBe(303);
     expect(userLoginResponse.headers.location).toBe('/');
 
     const reservationPage = await userAgent.get('/reservations/new').expect(200);
@@ -207,7 +207,7 @@ describe('Sistem Reservasi Ruangan - Basic Flow', () => {
     expect(createdReservation.status).toBe('pending');
 
     const adminLoginResponse = await loginWithForm(adminAgent, 'admin', 'Admin123!');
-    expect(adminLoginResponse.statusCode).toBe(302);
+    expect(adminLoginResponse.statusCode).toBe(303);
     expect(adminLoginResponse.headers.location).toBe('/');
 
     const manageReservationPage = await adminAgent.get('/admin/reservations').expect(200);
@@ -242,7 +242,7 @@ describe('Sistem Reservasi Ruangan - Basic Flow', () => {
     const adminAgent = request.agent(app);
 
     const userLoginResponse = await loginWithForm(userAgent, 'user', 'User12345!');
-    expect(userLoginResponse.statusCode).toBe(302);
+    expect(userLoginResponse.statusCode).toBe(303);
 
     const forbiddenResponse = await userAgent.get('/admin/audit-logs');
     expect(forbiddenResponse.statusCode).toBe(403);
@@ -252,7 +252,7 @@ describe('Sistem Reservasi Ruangan - Basic Flow', () => {
     expect(forbiddenUsersPage.statusCode).toBe(403);
 
     const adminLoginResponse = await loginWithForm(adminAgent, 'admin', 'Admin123!');
-    expect(adminLoginResponse.statusCode).toBe(302);
+    expect(adminLoginResponse.statusCode).toBe(303);
 
     const adminAuditPage = await adminAgent.get('/admin/audit-logs');
     expect(adminAuditPage.statusCode).toBe(200);

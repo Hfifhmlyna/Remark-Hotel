@@ -18,7 +18,7 @@ function errorHandler(err, req, res, next) {
 
     if (req.accepts('html')) {
       setFlash(req, 'error', 'Permintaan tidak valid. Silakan muat ulang halaman dan coba lagi.');
-      return res.redirect(req.get('referer') || '/');
+      return res.redirect(303, req.get('referer') || '/');
     }
 
     return res.status(403).json({

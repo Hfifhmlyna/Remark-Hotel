@@ -20,7 +20,7 @@ const loginRateLimiter = rateLimit({
 
     if (req.accepts('html')) {
       setFlash(req, 'error', 'Terlalu banyak percobaan login. Coba lagi beberapa saat.');
-      return res.redirect('/login');
+      return res.redirect(303, '/login');
     }
 
     return res.status(429).json({

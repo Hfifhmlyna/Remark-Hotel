@@ -32,6 +32,10 @@ function regenerateSession(req) {
   });
 }
 
+function redirectSeeOther(res, location) {
+  return res.redirect(303, location);
+}
+
 function showRegister(req, res) {
   if (req.session.user) {
     return res.redirect('/');
@@ -54,7 +58,7 @@ async function register(req, res, next) {
 
     if (existingUser) {
       setFlash(req, 'error', 'Email atau username sudah terdaftar.');
-      return res.redirect('/register');
+      return redirectSeeOther(res, '/register');
     }
 
     const passwordHash = bcrypt.hashSync(password, 12);
@@ -81,7 +85,7 @@ async function register(req, res, next) {
 
     logger.security('REGISTER_SUCCESS', { username, ip: req.ip });
     setFlash(req, 'success', 'Registrasi berhasil. Silakan login.');
-    return res.redirect('/login');
+    return redirectSeeOther(res, '/login');
   } catch (err) {
     return next(err);
   }
@@ -141,7 +145,7 @@ async function login(req, res, next) {
       });
 
       setFlash(req, 'error', 'Akun terkunci sementara. Silakan coba lagi beberapa saat.');
-      return res.redirect('/login');
+      return redirectSeeOther(res, '/login');
     }
 
     const isPasswordValid = user ? bcrypt.compareSync(password, user.password_hash) : false;
@@ -202,7 +206,7 @@ async function login(req, res, next) {
         setFlash(req, 'error', 'Kredensial tidak valid.');
       }
 
-      return res.redirect('/login');
+      return redirectSeeOther(res, '/login');
     }
 
     // [SECURE CODING] Reset hitungan gagal login ketika autentikasi berhasil.
@@ -249,7 +253,7 @@ async function login(req, res, next) {
     });
 
     setFlash(req, 'success', `Selamat datang, ${user.full_name}.`);
-    return res.redirect('/');
+    return redirectSeeOther(res, '/');
   } catch (err) {
     return next(err);
   }
@@ -285,7 +289,7 @@ async function logout(req, res, next) {
 
     res.clearCookie('connect.sid');
 
-    return res.redirect('/login');
+    return redirectSeeOther(res, '/login');
   });
 }
 
